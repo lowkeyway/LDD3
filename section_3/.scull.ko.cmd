@@ -1,0 +1,1 @@
+cmd_/home/lowkeyway/code/ldd3/section_3/scull.ko := ld -r -m elf_x86_64  -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/lowkeyway/code/ldd3/section_3/scull.ko /home/lowkeyway/code/ldd3/section_3/scull.o /home/lowkeyway/code/ldd3/section_3/scull.mod.o ;  true
