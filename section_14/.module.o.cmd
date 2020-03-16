@@ -1,0 +1,1 @@
+cmd_/home/lowkeyway/code/ldd3/section_4/module.o := ld -m elf_x86_64  -z max-page-size=0x200000    -r -o /home/lowkeyway/code/ldd3/section_4/module.o /home/lowkeyway/code/ldd3/section_4/scull.o /home/lowkeyway/code/ldd3/section_4/scull_pip.o

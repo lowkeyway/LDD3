@@ -1,0 +1,1 @@
+cmd_/home/lowkeyway/code/ldd3/section_14/ldd3_scullp.o := ld -m elf_x86_64  -z max-page-size=0x200000    -r -o /home/lowkeyway/code/ldd3/section_14/ldd3_scullp.o /home/lowkeyway/code/ldd3/section_14/scull.o /home/lowkeyway/code/ldd3/section_14/scull_pip.o /home/lowkeyway/code/ldd3/section_14/scull_device.o
