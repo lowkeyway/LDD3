@@ -1,0 +1,1 @@
+cmd_/home/lowkeyway/code/ldd3/section_4/ldd3_scullp.mod := { echo  /home/lowkeyway/code/ldd3/section_4/scull.o /home/lowkeyway/code/ldd3/section_4/scull_pip.o; echo; } > /home/lowkeyway/code/ldd3/section_4/ldd3_scullp.mod
