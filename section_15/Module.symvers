@@ -1,0 +1,4 @@
+0x00000000	unregister_ldd_driver	/home/lowkeyway/code/ldd3/section_15/ldd3_scull	EXPORT_SYMBOL
+0x00000000	register_ldd_driver	/home/lowkeyway/code/ldd3/section_15/ldd3_scull	EXPORT_SYMBOL
+0x00000000	register_ldd_device	/home/lowkeyway/code/ldd3/section_15/ldd3_scull	EXPORT_SYMBOL
+0x00000000	unregister_ldd_device	/home/lowkeyway/code/ldd3/section_15/ldd3_scull	EXPORT_SYMBOL
