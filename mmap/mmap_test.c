@@ -26,7 +26,7 @@ int main()
     char *buf;
     
     /*打开文件*/
-    fd = open("/dev/memdev0",O_RDWR);
+    fd = open("/dev/memdev_misc",O_RDWR);
         
     buf = (char *)malloc(MMAP_SIZE);
     memset(buf, 0, MMAP_SIZE);
