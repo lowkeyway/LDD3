@@ -48,13 +48,8 @@ sudo insmod ./mmap_kernel.ko
 
 ### 可以用下面命令查看设备号：
 ```
-cat /proc/devices
-```
-
-### 因为代码写的简单，需要自己创建节点
-```
-sudo mknod /dev/memdev0 c 452 0
-sudo mknod /dev/memdev1 c 452 1
+lowkeyway@lowkeyway:/dev$ll memdev_misc 
+crw------- 1 root root 10, 54 7月  19 21:31 memdev_misc
 ```
 
 ## 4. 编译mmap_text.c
