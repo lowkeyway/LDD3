@@ -1,5 +1,6 @@
 ifneq ($(KERNELRELEASE),)
-	obj-m := ovt_core.o ovt_device.o
+	obj-m := ovt.o ovt_device.o
+	ovt-objs:= ovt_core.o ovt_node.o
 else
 	KERNELDIR ?= /lib/modules/$(shell uname -r)/build
 	PWD := $(shell pwd)
