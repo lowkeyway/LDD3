@@ -91,3 +91,71 @@ lrwxrwxrwx  1 root root    0 7月  28 16:01 subsystem -> ../../../bus/platform/
 -rw-r--r--  1 root root 4096 7月  28 16:01 uevent
 
 ```
+
+# Device Attrs
+
+我们在做driver调试的过程中，经常会暴露一些节点，通过这些节点我们可以在用户态通过cat/echo命令同用户态进行通讯，那么这些节点在是如何做出来的呢？
+其实也非常简单，只用一个函数就可以了**sysfs_create_group**(这个接口可以用来注册一组节点)，比如：
+
+## 1. 先定义好需要的attr group，并且写好show/store函数
+```
+#include <linux/sysfs.h>
+#include <linux/device.h>
+
+static char buffer[10] = {0};
+
+static ssize_t ovt_info_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+  int ret = 0;
+  printk("%s\n", __func__);
+  ret = sprintf(buf, "%s", buffer);
+  return ret; 
+}
+
+static ssize_t ovt_info_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+  int ret = 0;
+  printk("%s, count = %d\n", __func__, count);
+
+  if(count > 10) {
+    printk("%s, count = %d\n", __func__, count);
+    count = 10 -1;
+  }
+  
+  memcpy(buffer, buf, count);
+
+  return count; 
+}
+
+static DEVICE_ATTR(ovt_info, 0644, ovt_info_show, ovt_info_store);
+
+static struct attribute *ovt_attributes[] = {
+  &dev_attr_ovt_info.attr,
+  NULL
+};
+
+const struct attribute_group ovt_attr_group = {
+  .attrs = ovt_attributes,
+};
+```
+
+## 2. 调用sysfs_create_group
+
+在调用sysfs_create_group的时候，注意第一个传参，kobj，我们可以自己通过kobject_create_and_add函数创建一个节点，也可以利用已经写好的platform设备。
+
+```
+extern const struct attribute_group ovt_attr_group;
+sysfs_create_group(&pdev->dev.kobj, &ovt_attr_group);
+```
+
+
+## 3. 查看节点
+
+这样我们就可以在platform_device中看到 ovt_info 节点了。
+
+```
+lowkeyway@lowkeyway:/sys/devices/platform/OVT_TOUCH_PLT$cat ovt_info 
+lowkeyway@lowkeyway:/sys/devices/platform/OVT_TOUCH_PLT$echo 1 > ovt_info 
+lowkeyway@lowkeyway:/sys/devices/platform/OVT_TOUCH_PLT$cat ovt_info 
+1
+```
