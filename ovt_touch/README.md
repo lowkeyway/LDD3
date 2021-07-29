@@ -487,3 +487,15 @@ static struct spi_driver ovt_spi_driver = {
 spi_register_driver(&ovt_spi_driver);
 ```
 
+## Node
+
+一系列操作后，我们可以看到SPI对应的节点：
+
+```
+lowkeyway@lowkeyway:/sys/bus/spi/devices$ll
+总用量 0
+drwxr-xr-x 2 root root 0 7月  28 11:50 ./
+drwxr-xr-x 4 root root 0 7月  28 11:50 ../
+lrwxrwxrwx 1 root root 0 7月  29 12:45 spi0.3 -> ../../../devices/platform/OVT_TOUCH_PLT/spi_master/spi0/spi0.3
+lrwxrwxrwx 1 root root 0 7月  29 12:45 spi1.3 -> ../../../devices/platform/OVT_TOUCH_PLT/spi_master/spi1/spi1.3/
+```
