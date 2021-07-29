@@ -4,6 +4,7 @@ static bool plt_reg = 0;
 static bool node_reg = 0;
 
 extern const struct attribute_group ovt_attr_group;
+struct spi_device *spi_dev;
 
 static struct spi_board_info ovt_spi_board = {
   .modalias = "ovt_spi_device",
@@ -29,7 +30,6 @@ static int ovt_core_probe(struct platform_device *pdev)
 {
   int ret = 0;
   struct spi_master *master;
-  struct spi_device *spi_dev;
 
   printk("%s\n", __func__);
 
@@ -74,6 +74,10 @@ static int ovt_core_probe(struct platform_device *pdev)
 static int ovt_core_remove(struct platform_device *pdev)
 {
   printk("%s\n", __func__);
+  struct spi_master *master = platform_get_drvdata(pdev);
+  spi_unregister_device(spi_dev);
+  spi_unregister_master(master);
+
   if(node_reg)
    sysfs_remove_group(&pdev->dev.kobj, &ovt_attr_group);
   return 0;

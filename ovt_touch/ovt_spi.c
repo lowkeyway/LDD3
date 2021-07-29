@@ -46,7 +46,7 @@ static struct spi_driver ovt_spi_driver = {
 };
 
 
-static int __init ovt_device_init(void)
+static int __init ovt_spi_init(void)
 {
   int ret = 0;
   printk("%s\n", __func__);
@@ -67,7 +67,7 @@ static int __init ovt_device_init(void)
   return ret;
 }
 
-static void __exit ovt_device_exit(void)
+static void __exit ovt_spi_exit(void)
 {
   printk("%s\n", __func__);
   if(plt_reg)
@@ -78,6 +78,6 @@ static void __exit ovt_device_exit(void)
 }
 
 
-module_init(ovt_device_init);
-module_exit(ovt_device_exit);
+module_init(ovt_spi_init);
+module_exit(ovt_spi_exit);
 MODULE_LICENSE("GPL");
