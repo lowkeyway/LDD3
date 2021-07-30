@@ -1,3 +1,4 @@
+EXTRA_CFLAGS = -w
 ifneq ($(KERNELRELEASE),)
 	obj-m := ovt.o ovt_spi.o ovt_device.o
 	ovt-objs:= ovt_core.o ovt_node.o
@@ -18,7 +19,7 @@ install:
 	sudo insmod ovt_device.ko
 
 rmmod:
-	sudo rmmod ovt
 	sudo rmmod ovt_spi
 	sudo rmmod ovt_device
+	sudo rmmod ovt
 endif

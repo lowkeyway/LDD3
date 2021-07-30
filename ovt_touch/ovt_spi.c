@@ -3,6 +3,9 @@
 static bool plt_reg = 0;
 static bool spi_reg = 0;
 
+extern struct ovt_tcm_hcd *tcm_hcd;
+static struct ovt_tcm_hw_interface hw_if;
+static struct ovt_tcm_bus_io bus_io;
 
 static void ovt_plt_release(struct device *dev)
 {
@@ -10,10 +13,35 @@ static void ovt_plt_release(struct device *dev)
   return;
 }
 
+static int ovt_spi_read(struct ovt_tcm_hcd *tcm_hcd, unsigned char *data, unsigned int length)
+{
+  printk("%s\n", __func__);
+  return 0;
+}
+
+int ovt_spi_write(struct ovt_tcm_hcd *tcm_hcd, unsigned char *data, unsigned int length)
+//static int ovt_spi_write(struct ovt_tcm_hcd *tcm_hcd, unsigned char *data, unsigned int length)
+{
+  printk("%s\n", __func__);
+  return 0;
+}
+
+
 
 static int ovt_spi_dev_probe(struct spi_device *spi)
 {
   printk("%s\n", __func__);
+  hw_if.bdata = spi->dev.platform_data;
+  bus_io.type = 0x1c;
+  bus_io.read = ovt_spi_read;
+  bus_io.write = ovt_spi_write;
+
+  hw_if.bus_io = &bus_io;
+
+  tcm_hcd->hw_if = &hw_if;
+  tcm_hcd->pdev->dev.parent = &spi->dev;
+  tcm_hcd->pdev->dev.platform_data = &hw_if;
+
   return 0;
 }
 

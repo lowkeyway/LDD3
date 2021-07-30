@@ -4,7 +4,8 @@ static bool plt_reg = 0;
 static bool node_reg = 0;
 
 extern const struct attribute_group ovt_attr_group;
-struct spi_device *spi_dev;
+struct ovt_tcm_hcd *tcm_hcd;
+EXPORT_SYMBOL(tcm_hcd);
 
 static struct spi_board_info ovt_spi_board = {
   .modalias = "ovt_spi_device",
@@ -26,7 +27,8 @@ static int ovt_spi_transfer(struct spi_master *master, struct spi_message *msg)
   return 0;
 }
 
-static int ovt_core_probe(struct platform_device *pdev)
+
+static int ovt_spi_bus_device(struct platform_device *pdev, struct spi_device **spi_dev)
 {
   int ret = 0;
   struct spi_master *master;
@@ -49,15 +51,43 @@ static int ovt_core_probe(struct platform_device *pdev)
     return -EINVAL;
   }
 
-  platform_set_drvdata(pdev, master);
+  //platform_set_drvdata(pdev, master);
 
-  spi_dev = spi_new_device(master, &ovt_spi_board);
-  if(NULL == spi_dev) {
+  *spi_dev = spi_new_device(master, &ovt_spi_board);
+  if(NULL == *spi_dev) {
     printk("spi_new_device fail!\n");
     return -EINVAL;
   }
 
   printk("Register SPI device finish!\n");
+
+  return ret;
+}
+
+static int ovt_core_probe(struct platform_device *pdev)
+{
+  int ret = 0;
+  struct spi_device *spi_dev;
+
+  tcm_hcd = kzalloc(sizeof(*tcm_hcd), GFP_KERNEL);
+  if(NULL == tcm_hcd) {
+    printk("tcm_hcd malloc fail!\n");
+    return -ENOMEM;
+  }
+
+  printk("%s\n", __func__);
+
+  tcm_hcd->pdev = pdev;
+
+  ret = ovt_spi_bus_device(pdev, &spi_dev);
+  if(ret) {
+    printk("ovt_spi_bus_device fail! ret = %d\n", ret);
+    return ret;
+  }
+
+  tcm_hcd->spi_dev = spi_dev;
+
+  platform_set_drvdata(pdev, tcm_hcd);
 
   ret = sysfs_create_group(&pdev->dev.kobj, &ovt_attr_group);
   if(ret){
@@ -74,8 +104,8 @@ static int ovt_core_probe(struct platform_device *pdev)
 static int ovt_core_remove(struct platform_device *pdev)
 {
   printk("%s\n", __func__);
-  struct spi_master *master = platform_get_drvdata(pdev);
-  spi_unregister_device(spi_dev);
+  struct spi_master *master = tcm_hcd->spi_dev->master;
+  spi_unregister_device(tcm_hcd->spi_dev);
   spi_unregister_master(master);
 
   if(node_reg)
