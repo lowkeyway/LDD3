@@ -499,3 +499,65 @@ drwxr-xr-x 4 root root 0 7月  28 11:50 ../
 lrwxrwxrwx 1 root root 0 7月  29 12:45 spi0.3 -> ../../../devices/platform/OVT_TOUCH_PLT/spi_master/spi0/spi0.3
 lrwxrwxrwx 1 root root 0 7月  29 12:45 spi1.3 -> ../../../devices/platform/OVT_TOUCH_PLT/spi_master/spi1/spi1.3/
 ```
+
+
+# CDEV
+
+我们在mmap中做过一个字符设备，使用杂项设备代替的，非常简单，一个msic_register就可以搞定了。但是有的时候，我们确实需要一个cdev设备，怎么办呢？
+这个问题可难不倒我们，字符设备作为Linux驱动工程师的入门Hello World，随手就来一个。
+
+## 步骤：
+
+准备一下全局变量：
+```
+dev_t dev_num;
+struct cdev char_dev;
+struct class *char_class;
+struct device *char_device;
+```
+
+### 1. 申请字符设备的设备号
+
+```
+alloc_chrdev_region(&dev_num, 0, 1, OVT_PLATFORM_NAME);
+```
+
+### 2. 字符设备初始化并关联字符设备号
+```
+static const struct file_operations ovt_device_fops = {
+  .owner = THIS_MODULE,
+  .unlocked_ioctl = ovt_device_ioctl,
+  .read = ovt_device_read,
+  .write = ovt_device_write,
+  .open = ovt_device_open,
+  .release = ovt_device_release,
+};
+
+cdev_init(&char_dev, &ovt_device_fops);
+ret = cdev_add(&char_dev, dev_num, 1);
+```
+
+### 3. 申请class，并创建设备
+```
+char_class = class_create(THIS_MODULE, OVT_PLATFORM_NAME);
+char_device = device_create(char_class, NULL, dev_num, NULL, OVT_CHAR_NAME"%d", MINOR(dev_num));
+```
+
+## 节点
+
+```
+lowkeyway@lowkeyway:/dev$find . -name "OVT*"
+./OVT_TOUCH_CHAR0
+```
+
+```
+lowkeyway@lowkeyway:/sys$sudo find . -name "OVT*"
+./class/OVT_TOUCH_PLT
+./class/OVT_TOUCH_PLT/OVT_TOUCH_CHAR0
+./devices/platform/OVT_TOUCH_PLT
+./devices/virtual/OVT_TOUCH_PLT
+./devices/virtual/OVT_TOUCH_PLT/OVT_TOUCH_CHAR0
+./bus/platform/devices/OVT_TOUCH_PLT
+./bus/platform/drivers/OVT_TOUCH_PLT
+./bus/platform/drivers/OVT_TOUCH_PLT/OVT_TOUCH_PLT
+```
