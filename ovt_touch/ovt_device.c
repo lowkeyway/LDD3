@@ -5,6 +5,10 @@ dev_t dev_num;
 struct cdev char_dev;
 struct class *char_class;
 struct device *char_device;
+struct device_hcd *device_hcd;
+extern struct ovt_tcm_hcd *tcm_hcd;
+
+static unsigned char data[100] = {0};
 
 
 static int ovt_device_open(struct inode *inp, struct file *filp)
@@ -13,25 +17,41 @@ static int ovt_device_open(struct inode *inp, struct file *filp)
   printk("%s\n", __func__);
   return ret;
 }
+
 static int ovt_device_release(struct inode *inp, struct file *filp)
 {
   int ret = 0;
   printk("%s\n", __func__);
   return ret;
 }
+
 static ssize_t ovt_device_read(struct file *filp, char __user *buf,
     size_t count, loff_t *f_pos)
 {
   int ret = 0;
-  printk("%s\n", __func__);
-  return ret;
+  size_t  length = count;
+  printk("%s, count = %d\n", __func__, count);
+  if(length > 100) {
+    length = 99;
+    data[99] = '\0';
+  }
+
+  tcm_hcd->hw_if->bus_io->read(tcm_hcd, data, length);
+  copy_to_user(buf, data, length);
+  return 100;
 }
+
 static ssize_t ovt_device_write(struct file *filp, const char __user *buf,
     size_t count, loff_t *f_pos)
 {
   int ret = 0;
-  printk("%s\n", __func__);
-  return ret;
+  printk("%s, count = %d\n", __func__);
+  if(count > 100)
+    count = 99;
+  copy_from_user(data, buf, count);
+  tcm_hcd->hw_if->bus_io->write(tcm_hcd, data, count);
+
+  return count;
 }
 static long ovt_device_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
@@ -55,6 +75,13 @@ static int __init ovt_device_init(void)
 {
   int ret = 0;
   printk("%s\n", __func__);
+
+  device_hcd = kzalloc(sizeof(*device_hcd), GFP_KERNEL);
+  if(!device_hcd) {
+    printk("alloc_device_hcd malloc fail!\n");
+    return -ENOMEM;
+  }
+
 
   ret = alloc_chrdev_region(&dev_num, 0, 1, OVT_PLATFORM_NAME);
   if(0 > ret) {
@@ -81,6 +108,9 @@ static int __init ovt_device_init(void)
     printk("class_create fail!\n");
     goto err_device_create;
   }
+
+  device_hcd->tcm_hcd = tcm_hcd;
+  device_hcd->char_dev = char_dev;
 
   return 0;
 

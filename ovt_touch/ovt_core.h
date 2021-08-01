@@ -5,6 +5,7 @@
 #include <linux/platform_device.h>
 #include <linux/spi/spi.h>
 #include <linux/cdev.h>
+#include <linux/uaccess.h>
 
 #define OVT_PLATFORM_NAME "OVT_TOUCH_PLT"
 #define OVT_CHAR_NAME "OVT_TOUCH_CHAR"
@@ -29,6 +30,11 @@ struct ovt_tcm_hcd {
   struct platform_device *pdev;
   struct spi_device *spi_dev;
   struct ovt_tcm_hw_interface *hw_if;
+};
+
+struct device_hcd {
+  struct cdev char_dev;
+  struct ovt_tcm_hcd *tcm_hcd;
 };
 
 #endif

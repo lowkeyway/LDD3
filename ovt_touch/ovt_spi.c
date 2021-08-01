@@ -15,15 +15,23 @@ static void ovt_plt_release(struct device *dev)
 
 static int ovt_spi_read(struct ovt_tcm_hcd *tcm_hcd, unsigned char *data, unsigned int length)
 {
-  printk("%s\n", __func__);
+  int i = 0;
+  printk("%s, length = %d\n", __func__, length);
+  for(i = 0; i < length; i++)
+    data[i] = i;
   return 0;
 }
 
-int ovt_spi_write(struct ovt_tcm_hcd *tcm_hcd, unsigned char *data, unsigned int length)
-//static int ovt_spi_write(struct ovt_tcm_hcd *tcm_hcd, unsigned char *data, unsigned int length)
+static int ovt_spi_write(struct ovt_tcm_hcd *tcm_hcd, unsigned char *data, unsigned int length)
 {
-  printk("%s\n", __func__);
-  return 0;
+  int i = 0;
+  printk("%s, length = %d\n", __func__, length);
+  printk("write data: ");
+  for(i = 0; i < length -1; i++) {
+    if(0 == i%10) printk("\n");
+    printk("%4d ", data[i]);
+  }
+  return length;
 }
 
 
