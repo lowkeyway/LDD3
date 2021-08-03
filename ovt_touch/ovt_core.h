@@ -37,4 +37,31 @@ struct device_hcd {
   struct ovt_tcm_hcd *tcm_hcd;
 };
 
+struct ovt_tcm_module_pool {
+  bool queue_work;
+  bool initialized;
+  struct list_head list;
+  struct work_struct work;
+  struct workqueue_struct *workqueue;
+  struct ovt_tcm_hcd *tcm_hcd;
+};
+
+enum module_type {
+  TCM_DEVICE = 2,
+  TCM_TESTING = 3,
+};
+
+struct ovt_tcm_module_cb {
+  enum module_type type;
+  int (*init)(struct ovt_tcm_hcd *tcm_hcd);
+  int (*remove)(struct ovt_tcm_hcd *tcm_hcd);
+};
+
+struct ovt_tcm_module_handler {
+  bool insert;
+  bool detach;
+  struct list_head list;
+  struct ovt_tcm_module_cb *mod_cb;
+};
+
 #endif

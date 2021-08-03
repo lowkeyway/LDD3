@@ -71,7 +71,7 @@ static const struct file_operations ovt_device_fops = {
 };
 
 
-static int __init ovt_device_init(void)
+static int device_init(struct ovt_tcm_hcd *tcm_hcd)
 {
   int ret = 0;
   printk("%s\n", __func__);
@@ -128,7 +128,7 @@ err_alloc_chardev_region:
   return ret;
 }
 
-static void __exit ovt_device_exit(void)
+static int device_remove(struct ovt_tcm_hcd *tcm_hcd)
 {
   printk("%s\n", __func__);
   device_destroy(char_class, dev_num);
@@ -139,6 +139,22 @@ static void __exit ovt_device_exit(void)
   return;
 }
 
+
+static struct ovt_tcm_module_cb device_module = {
+  .type = TCM_DEVICE,
+  .init = device_init,
+  .remove = device_remove,
+};
+
+static int __init ovt_device_init(void)
+{
+  return ovt_tcm_add_module(&device_module, true);
+}
+
+static void __exit ovt_device_exit(void)
+{
+  ovt_tcm_add_module(&device_module, false);
+}
 
 module_init(ovt_device_init);
 module_exit(ovt_device_exit);

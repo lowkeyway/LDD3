@@ -6,6 +6,7 @@ static bool node_reg = 0;
 extern const struct attribute_group ovt_attr_group;
 struct ovt_tcm_hcd *tcm_hcd;
 EXPORT_SYMBOL(tcm_hcd);
+static struct ovt_tcm_module_pool mod_pool;
 
 static struct spi_board_info ovt_spi_board = {
   .modalias = "ovt_spi_device",
@@ -13,6 +14,49 @@ static struct spi_board_info ovt_spi_board = {
   .chip_select = 3,
   .mode = SPI_MODE_0,
 };
+
+int ovt_tcm_add_module(struct ovt_tcm_module_cb *mod_cb, bool insert)
+{
+  printk("%s\n", __func__);
+  struct ovt_tcm_module_handler *mod_handler;
+
+  
+  if(!mod_pool.initialized) {
+    INIT_LIST_HEAD(&mod_pool.list);
+    mod_pool.initialized = true;
+  }
+
+  if(insert) {
+    mod_handler = kzalloc(sizeof(*mod_handler), GFP_KERNEL);
+    if(!mod_handler) {
+      printk("zalloc mod_handler fail!\n");
+      return -ENOMEM;
+    }
+
+    mod_handler->mod_cb = mod_cb;
+    mod_handler->insert = true;
+    mod_handler->detach = false;
+    list_add_tail(&mod_handler->list, &mod_pool.list);
+ } else {
+    if(!list_empty(&mod_pool.list)) {
+      list_for_each_entry(mod_handler, &mod_pool.list, list) {
+        if(mod_handler->mod_cb->type == mod_cb->type) {
+          mod_handler->insert = false;
+          mod_handler->detach = true;
+        }
+      }
+      
+    }
+ }
+
+  if(mod_pool.queue_work) {
+    queue_work(mod_pool.workqueue, &mod_pool.work);
+  }
+
+  return 0;
+}
+
+EXPORT_SYMBOL(ovt_tcm_add_module);
 
 static int ovt_spi_setup(struct spi_device *spi)
 {
@@ -122,15 +166,52 @@ static struct platform_driver ovt_platform_driver = {
   .remove = ovt_core_remove,
 };
 
+static void ovt_tcm_module_work(struct work_struct *work)
+{
+  printk("%s\n", __func__);
+  struct ovt_tcm_module_handler *mod_handler;
+  struct ovt_tcm_module_handler *temp_handler;
+  struct ovt_tcm_hcd *tcm_hcd = mod_pool.tcm_hcd;
+
+  if(!list_empty(&mod_pool.list)) {
+    list_for_each_entry_safe(mod_handler, temp_handler, &mod_pool.list, list) {
+      if(mod_handler->insert) {
+        if(mod_handler->mod_cb->init)
+          mod_handler->mod_cb->init(tcm_hcd);
+        mod_handler->insert = false;
+      }
+      if(mod_handler->detach) {
+        if(mod_handler->mod_cb->remove)
+          mod_handler->mod_cb->remove(tcm_hcd);
+        mod_handler->detach = false;
+        list_del(&mod_handler->list);
+        kfree(mod_handler);
+      }
+
+    }
+  }
+
+  return;
+}
+
 static int __init ovt_core_init(void)
 {
   int ret = 0;
   printk("%s\n", __func__);
   ret = platform_driver_register(&ovt_platform_driver);
-  if(ret)
+  if(ret) {
     printk("Unable to register driver, ret = %d\n", ret);
-  else
+    goto err;
+  }
+  else {
     plt_reg = 1;
+  }
+
+  mod_pool.workqueue = create_singlethread_workqueue("ovt_tcm_module");
+  INIT_WORK(&mod_pool.work, ovt_tcm_module_work);
+  mod_pool.queue_work = true;
+
+err:
   return ret;
 }
 
