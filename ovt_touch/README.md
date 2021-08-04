@@ -568,11 +568,115 @@ lowkeyway@lowkeyway:/sys$sudo find . -name "OVT*"
 我们设计了多个模块，那么这几个模块之间改如何串在一块呢？
 其实最不推荐的就是用全局变量extern的方式，那么怎么办呢？
 
-### 1. 我们先构架一个结构体的练习图
+### 1. 我们先构架一个结构体的联系图
 <img src="https://github.com/lowkeyway/LDD3/blob/master/ovt_touch/pic/%E7%BB%93%E6%9E%84%E4%BD%93%E7%9A%84%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
+
+根据图中的关系，把各个模块的结构体可以联系起来。
 
 ### 2. Core模块作为主模块，其他模块来注册
 
 我们选定了Core模块作为核心模块，那么其他模块可以通过ovt_tcm_add_module接口把改模块注册到mod_pool中。
 
 
+```
+int ovt_tcm_add_module(struct ovt_tcm_module_cb *mod_cb, bool insert)
+{
+  printk("%s\n", __func__);
+  struct ovt_tcm_module_handler *mod_handler;
+
+  
+  if(!mod_pool.initialized) {
+    INIT_LIST_HEAD(&mod_pool.list);
+    mod_pool.initialized = true;
+  }
+
+  if(insert) {
+    mod_handler = kzalloc(sizeof(*mod_handler), GFP_KERNEL);
+    if(!mod_handler) {
+      printk("zalloc mod_handler fail!\n");
+      return -ENOMEM;
+    }
+
+    mod_handler->mod_cb = mod_cb;
+    mod_handler->insert = true;
+    mod_handler->detach = false;
+    list_add_tail(&mod_handler->list, &mod_pool.list);
+ } else {
+    if(!list_empty(&mod_pool.list)) {
+      list_for_each_entry(mod_handler, &mod_pool.list, list) {
+        if(mod_handler->mod_cb->type == mod_cb->type) {
+          mod_handler->insert = false;
+          mod_handler->detach = true;
+        }
+      }
+      
+    }
+ }
+
+  if(mod_pool.queue_work) {
+    queue_work(mod_pool.workqueue, &mod_pool.work);
+  }
+
+  return 0;
+}
+```
+
+我们已经定义好了workqueue
+```
+static void ovt_tcm_module_work(struct work_struct *work)
+{
+  printk("%s\n", __func__);
+  struct ovt_tcm_module_handler *mod_handler;
+  struct ovt_tcm_module_handler *temp_handler;
+  struct ovt_tcm_hcd *tcm_hcd = mod_pool.tcm_hcd;
+
+  if(!list_empty(&mod_pool.list)) {
+    list_for_each_entry_safe(mod_handler, temp_handler, &mod_pool.list, list) {
+      if(mod_handler->insert) {
+        if(mod_handler->mod_cb->init)
+          mod_handler->mod_cb->init(tcm_hcd);
+        mod_handler->insert = false;
+      }
+      if(mod_handler->detach) {
+        if(mod_handler->mod_cb->remove)
+          mod_handler->mod_cb->remove(tcm_hcd);
+        mod_handler->detach = false;
+        list_del(&mod_handler->list);
+        kfree(mod_handler);
+      }
+
+    }
+  }
+
+  return;
+}
+
+mod_pool.workqueue = create_singlethread_workqueue("ovt_tcm_module");
+
+
+```
+
+### 3. 其他模块就可以通过调用接口来实现register了
+
+
+
+```
+static int device_init(struct ovt_tcm_hcd *tcm_hcd)
+{
+  xxxx;
+}
+static int device_remove(struct ovt_tcm_hcd *tcm_hcd)
+{
+  xxxx
+  return;
+}
+
+static struct ovt_tcm_module_cb device_module = {
+  .type = TCM_DEVICE,
+  .init = device_init,
+  .remove = device_remove,
+};
+return ovt_tcm_add_module(&device_module, true);
+```
+
+通过上面三个步骤就能实现模块注册到一个list里面了。
