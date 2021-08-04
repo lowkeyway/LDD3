@@ -561,3 +561,18 @@ lowkeyway@lowkeyway:/sys$sudo find . -name "OVT*"
 ./bus/platform/drivers/OVT_TOUCH_PLT
 ./bus/platform/drivers/OVT_TOUCH_PLT/OVT_TOUCH_PLT
 ```
+
+
+## 架构设计
+
+我们设计了多个模块，那么这几个模块之间改如何串在一块呢？
+其实最不推荐的就是用全局变量extern的方式，那么怎么办呢？
+
+### 1. 我们先构架一个结构体的练习图
+<img src="https://github.com/lowkeyway/LDD3/blob/master/ovt_touch/pic/%E7%BB%93%E6%9E%84%E4%BD%93%E7%9A%84%E5%85%B3%E7%B3%BB%E5%9B%BE.png">
+
+### 2. Core模块作为主模块，其他模块来注册
+
+我们选定了Core模块作为核心模块，那么其他模块可以通过ovt_tcm_add_module接口把改模块注册到mod_pool中。
+
+
